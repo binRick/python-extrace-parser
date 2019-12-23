@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
-import os, sys, json, pprint, blessings, traceback, humanize, datetime, time
+import os, sys, json, pprint, blessings, traceback
 from ascii_art import Bar
 from operator import attrgetter
 from blessings import Terminal
 
-#print(humanize.naturaldelta(datetime.timedelta(seconds=1001)))
-#sys.exit()
-
 t = Terminal()
 pp = pprint.PrettyPrinter(indent=4).pprint
-
-if len(sys.argv) < 2:
-	print(t.bold_red_on_black('\n\n       First Argument must be extrace output file     \n'))
-	sys.exit(1)
-
 FILE = sys.argv[1]
 FORKS = []
 REPORTS = {}
@@ -37,17 +29,9 @@ def unique(list1):
 	return (list(list_set))
 
 def getExtraceLines(FILE):
-	if not FILE or not os.path.exists(FILE):
-		print(t.bold_red_on_bright_black('First Argument must be extrace output file'))
-		sys.exit(1)
-	try:
-		with open(FILE,'r') as f:
-			DAT = f.read()
-		return DAT.strip().split('\n')
-	except Exception as e:
-		print('Failed to open extrace output file')
-		traceback.print_exc()
-
+	with open(FILE,'r') as f:
+		DAT = f.read()
+	return DAT.strip().split('\n')
 
 LINES = getExtraceLines(FILE)
 for l in LINES:
@@ -103,7 +87,7 @@ for F in FORKS:
 	else:
 		VALID_FORKS.append(F)
 
-VALID_FORKS_TXT = t.bold_black_on_bright_white('Valid Forks')
+VALID_FORKS_TXT = t.bold_red_on_bright_green('Valid Forks')
 
 print('\n{} {} from {} extrace lines'.format(len(FORKS), VALID_FORKS_TXT, len(LINES)))
 print('{} Invalid Forks'.format(len(INVALID_FORKS)))
