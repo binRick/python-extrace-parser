@@ -55,8 +55,9 @@ for l in LINES:
 	if items[0].endswith('+'):
 		NEW_FORK = {
 			"pid": int(items[0].replace('+','')),
-			"cwd": items[1],
-			"exec": ' '.join(items[3:]),
+			"user": items[1].split('<')[1].split('>')[0],
+			"cwd": items[2],
+			"exec": ' '.join(items[4:]),
 		}
 		FORKS.append(NEW_FORK)
 	elif items[0].endswith('-') and 'time=' in items[4]:
@@ -102,6 +103,20 @@ for F in FORKS:
 		FORKS.remove(F)
 	else:
 		VALID_FORKS.append(F)
+
+USERS = []
+USER_FREQS = {'total': {}, }
+for f in FORKS:
+    if 'user' in f.keys() and not f['user'] in USERS:
+        USERS.append(f['user'])
+    if not f['user'] in USER_FREQS['total'].keys():
+        USER_FREQS['total'][f['user']] = 0
+    else:
+        USER_FREQS['total'][f['user']] += 1
+
+print(USERS)
+print(USER_FREQS)
+#sys.exit()
 
 VALID_FORKS_TXT = t.bold_black_on_bright_white('Valid Forks')
 
