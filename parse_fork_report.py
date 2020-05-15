@@ -4,6 +4,8 @@ from ascii_art import Bar
 from operator import attrgetter
 from blessings import Terminal
 
+BAR_CHAR_FORK_FREQUENCY_ROWS = 12
+BAR_CHAR_EXECS_TIME_ROWS = 12
 #print(humanize.naturaldelta(datetime.timedelta(seconds=1001)))
 #sys.exit()
 
@@ -50,6 +52,7 @@ def getExtraceLines(FILE):
 
 
 LINES = getExtraceLines(FILE)
+
 for l in LINES:
 	items = l.split(' ')
 	if items[0].endswith('+'):
@@ -181,6 +184,6 @@ for i in REPORTS['__TOP_EXECS_FREQUENCY'][:5]:
 	PB[i['exec']] = i['execs_qty']
 
 print("\n\n")
-bar_chart('Fork Frequency', REPORTS['__TOP_EXECS_FREQUENCY'], 'exec', 'execs_qty', 10)
-bar_chart('Fork Duration (ms)', REPORTS['__TOP_EXECS_TIME'], 'exec', 'time_ms', 10)
+bar_chart('Fork Frequency', REPORTS['__TOP_EXECS_FREQUENCY'], 'exec', 'execs_qty', BAR_CHAR_FORK_FREQUENCY_ROWS)
+bar_chart('Fork Duration (ms)', REPORTS['__TOP_EXECS_TIME'], 'exec', 'time_ms', BAR_CHAR_EXECS_TIME_ROWS)
 
