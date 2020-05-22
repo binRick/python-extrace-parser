@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, json, pprint, blessings, traceback, humanize, datetime, time
+import os, sys, json, pprint, blessings, traceback, humanize, datetime, time, psutil
 from ascii_art import Bar
 from operator import attrgetter
 from blessings import Terminal
@@ -17,8 +17,29 @@ if len(sys.argv) < 2:
 	sys.exit(1)
 
 FILE = sys.argv[1]
+try:
+    EXTRACE_PID = int(sys.argv[2])
+except:
+    EXTRACE_PID = None
+
 FORKS = []
+END_FORKS = {}
 REPORTS = {}
+
+CUR_PROCS_LIST = []
+def check_pids():
+    #p = psutil.Process(int(PLAY['pid']))
+    for p in psutil.pids():
+        try:
+            p = psutil.Process(p).as_dict()
+            files = [p.path for p in p['open_files']]
+            match = FILE in files
+        except:
+            continue
+        if match:
+            print(files)
+
+    sys.exit()
 
 def truncate_string(S, LENGTH=20):
 	if len(S) > LENGTH:
@@ -60,10 +81,13 @@ for l in LINES:
 			"pid": int(items[0].replace('+','')),
 			"user": items[1].split('<')[1].split('>')[0],
 			"cwd": items[2],
-			"exec": ' '.join(items[4:]),
+			"exec": items[4],
+			"args": ' '.join(items[5:]).strip(),
 		}
+#		print(items)
 		FORKS.append(NEW_FORK)
 	elif items[0].endswith('-') and 'time=' in items[4]:
+
 		END_FORK = {
 			"pid": int(items[0].replace('-','')),
 			"result": items[2],
@@ -84,14 +108,19 @@ for l in LINES:
 					F[k] = END_FORK[k]
 				break
 
+#		print(items, END_FORK, MATCHED)
+
 		if not MATCHED:
 			raise Exception('Unable to find ending fork', items, END_FORK)
 		else:
+			END_FORKS[END_FORK['pid']] = END_FORK
 			pass
 	else:
 		print('[unhandled line] {}'.format(items))
 		sys.exit(1)
 
+INTERESTING_CMDS = ['ssh','ssh-add','ssh-agent','ansible','ansible-playbook','python','python3','pip','pip3','python3.6','sftp','scp','rsync','borg']
+FOUND_INTERESTING_CMDS = {}
 REQUIRED_KEYS = ['time_ms','code','result','exec','pid','cwd']
 INVALID_FORKS = []
 VALID_FORKS = []
@@ -106,6 +135,36 @@ for F in FORKS:
 		FORKS.remove(F)
 	else:
 		VALID_FORKS.append(F)
+
+for vf in VALID_FORKS:
+    bn = os.path.basename(vf['exec'])
+    if bn in INTERESTING_CMDS:
+        r = {'name': bn, 'exec': vf['exec'],'time': vf['time'], 'result': vf['result'], 'code': vf['code'], 'pid':vf['pid'],'args':vf['args'], }
+        if not bn in FOUND_INTERESTING_CMDS.keys():
+            FOUND_INTERESTING_CMDS[bn] = []
+        FOUND_INTERESTING_CMDS[bn].append(r)
+
+print("\n")
+for k in FOUND_INTERESTING_CMDS.keys():
+    pids = [c['pid'] for c in FOUND_INTERESTING_CMDS[k]]
+    qty = len([c for c in FOUND_INTERESTING_CMDS[k]])
+    pids_failed = [c['pid'] for c in FOUND_INTERESTING_CMDS[k] if not c['pid'] in END_FORKS or int(END_FORKS[c['pid']]['code']) != 0]
+    pids_ok = [c['pid'] for c in FOUND_INTERESTING_CMDS[k] if not c['pid'] in END_FORKS or int(END_FORKS[c['pid']]['code']) == 0]
+    m = f'[{k}] {len(pids)} pids, {len(pids_failed)} failed, {len(pids_ok)} ok,'
+    print(m)
+    """
+    if 'python' in k:
+        print(FOUND_INTERESTING_CMDS[k])
+        print("\n")
+    if k == 'ssh':
+        print(type(FOUND_INTERESTING_CMDS[k]))
+        print("\n")
+    """
+
+print("\n")
+#print(VALID_FORKS[0])
+#print(END_FORKS)
+#sys.exit()
 
 USERS = []
 USER_FREQS = {'total': {}, }

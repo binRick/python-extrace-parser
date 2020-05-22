@@ -1,3 +1,3 @@
 #!/bin/bash
 set -e
-command extrace -fltdu -o out.txt 2>/dev/null
+command extrace -sfltdu -o out.txt 2>/dev/null
