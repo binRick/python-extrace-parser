@@ -28,18 +28,29 @@ REPORTS = {}
 
 CUR_PROCS_LIST = []
 def check_pids():
-    #p = psutil.Process(int(PLAY['pid']))
-    for p in psutil.pids():
+    if EXTRACE_PID == None:
+        return False
+    try:
+        p = psutil.Process(EXTRACE_PID)
+    except:
+        traceback.print_exc()
+        return False
+    children = []
+    for c in p.children(recursive=True):
         try:
-            p = psutil.Process(p).as_dict()
-            files = [p.path for p in p['open_files']]
-            match = FILE in files
+            for cc in c.children(recursive=True):
+                if not cc.pid in children:
+                    children.append(cc.pid)
+            children.append(c.pid)
         except:
-            continue
-        if match:
-            print(files)
+            pass
+    m = f'extrace pid {EXTRACE_PID} has {len(children)} children\n'
+    sys.stderr.write(m)
+    return children
 
-    sys.exit()
+
+if EXTRACE_PID:
+    check_pids()
 
 def truncate_string(S, LENGTH=20):
 	if len(S) > LENGTH:
@@ -143,6 +154,21 @@ for vf in VALID_FORKS:
         if not bn in FOUND_INTERESTING_CMDS.keys():
             FOUND_INTERESTING_CMDS[bn] = []
         FOUND_INTERESTING_CMDS[bn].append(r)
+
+print("\n")
+pids = check_pids()
+if pids:
+    for _p in pids:
+        try:
+            p = psutil.Process(int(_p))
+        except:
+            continue
+        D = p.as_dict()
+        if D['name'] in FOUND_INTERESTING_CMDS.keys():
+            T = int(p.as_dict()['create_time'])
+            AGE = int(int(time.time()) - T)
+            msg = f'{D["name"]} :: {AGE} secs old'
+            print(msg)
 
 print("\n")
 for k in FOUND_INTERESTING_CMDS.keys():
